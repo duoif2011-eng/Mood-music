@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mood Music — Admin</title>
+<style>
+:root{color-scheme:dark;--bg:#0a0a0d;--card:#15151a;--line:#2b2b33;--ink:#f4f3f0;--muted:#a5a4aa;--accent:#ff8a3d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:1100px;margin:auto;padding:28px 18px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px}
+h1{margin:0;font-size:28px}h2{margin:0 0 16px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:18px}
+input,select{width:100%;padding:12px 13px;border-radius:10px;border:1px solid var(--line);background:#0f0f13;color:var(--ink);outline:none}
+label{display:block;font-size:12px;color:var(--muted);margin:0 0 7px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full{grid-column:1/-1}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.btn{border:0;border-radius:10px;padding:11px 16px;font-weight:800}
+.primary{background:var(--accent);color:#111}.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}.danger{background:#8e2635;color:#fff}
+.msg{margin-top:12px;color:var(--muted);min-height:20px}table{width:100%;border-collapse:collapse}
+th,td{padding:11px 8px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
+th{color:var(--muted)}#app{display:none}#login{max-width:420px;margin:12vh auto}.row-actions{display:flex;gap:7px;flex-wrap:wrap}
+.small{font-size:12px;color:var(--muted)}.pill{display:inline-block;padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:11px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.full{grid-column:auto}table{display:block;overflow:auto;white-space:nowrap}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section id="login" class="card">
+<h1>🎵 Mood Music Admin</h1>
+<p class="small">Sign in with the Firebase account you created.</p>
+<form id="loginForm">
+<label>Email</label><input id="email" type="email" required autocomplete="username">
+<br><br><label>Password</label><input id="password" type="password" required autocomplete="current-password">
+<div class="actions"><button class="btn primary" type="submit">Sign in</button></div>
+<div id="loginMsg" class="msg"></div>
+</form>
+</section>
+
+<section id="app">
+<header><div><h1>🎵 Mood Music Admin</h1><div id="who" class="small"></div></div><button id="logout" class="btn ghost">Log out</button></header>
+
+<div class="card">
+<h2 id="formTitle">Add song</h2>
+<form id="songForm">
+<input type="hidden" id="songId">
+<div class="grid">
+<div><label>Song title *</label><input id="title" required></div>
+<div><label>Artist *</label><input id="artist" required></div>
+<div><label>Mood *</label><select id="mood" required>
+<option value="">Choose mood</option><option>happy</option><option>bored</option><option>sad</option><option>chill</option><option>stressed</option><option>energetic</option><option>tired</option>
+</select></div>
+<div><label>Country code</label><input id="country" placeholder="EG, SA, AE..."></div>
+<div><label>Style *</label><select id="style" required>
+<option value="">Choose style</option><option value="english">English</option><option value="arabic">Arabic</option><option value="asian">Asian</option><option value="african">African</option>
+</select></div>
+<div><label>Active</label><select id="active"><option value="true">Yes</option><option value="false">No</option></select></div>
+<div><label>Spotify URL</label><input id="spotify" type="url" placeholder="https://open.spotify.com/..."></div>
+<div><label>YouTube URL</label><input id="youtube" type="url" placeholder="https://www.youtube.com/..."></div>
+</div>
+<div class="actions"><button class="btn primary" type="submit">Save song</button><button class="btn ghost" type="button" id="cancelEdit" style="display:none">Cancel edit</button></div>
+<div id="saveMsg" class="msg"></div>
+</form>
+</div>
+
+<div class="card">
+<h2>Songs</h2><div class="small" id="count">Loading...</div><br>
+<table><thead><tr><th>Song</th><th>Mood</th><th>Country</th><th>Style</th><th>Active</th><th>Actions</th></tr></thead>
+<tbody id="songsBody"></tbody></table>
+</div>
+</section>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBrkbi3CwEfDhOyRpafpnIeDGRg0bOY8vM",
+  authDomain: "mood-music-677cc.firebaseapp.com",
+  projectId: "mood-music-677cc",
+  storageBucket: "mood-music-677cc.firebasestorage.app",
+  messagingSenderId: "901193560429",
+  appId: "1:901193560429:web:4bcf7fd72dcc7fab7f6a64",
+  measurementId: "G-Y0QC8CXV89"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const $ = id => document.getElementById(id);
+
+$("loginForm").addEventListener("submit", async e => {
+ e.preventDefault(); $("loginMsg").textContent="Signing in...";
+ try { await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value); $("loginMsg").textContent=""; }
+ catch(err){ $("loginMsg").textContent="Login failed: "+(err.code||err.message); }
+});
+
+$("logout").addEventListener("click",()=>signOut(auth));
+
+onAuthStateChanged(auth,async user=>{
+ if(!user){$("login").style.display="block";$("app").style.display="none";return;}
+ $("login").style.display="none";$("app").style.display="block";$("who").textContent="Signed in as "+(user.email||"admin");await loadSongs();
+});
+
+async function loadSongs(){
+ $("songsBody").innerHTML='<tr><td colspan="6">Loading...</td></tr>';
+ try{
+  const snap=await getDocs(query(collection(db,"songs"),orderBy("createdAt","desc")));
+  $("count").textContent=snap.size+" song(s)";
+  if(!snap.size){$("songsBody").innerHTML='<tr><td colspan="6">No songs yet. Add your first song above.</td></tr>';return;}
+  $("songsBody").innerHTML="";
+  snap.forEach(d=>{
+   const s=d.data(),tr=document.createElement("tr");
+   tr.innerHTML=`<td><b>${escapeHtml(s.title||"")}</b><br><span class="small">${escapeHtml(s.artist||"")}</span></td>
+   <td><span class="pill">${escapeHtml(s.mood||"")}</span></td><td>${escapeHtml(s.country||"—")}</td>
+   <td>${escapeHtml(s.style||"")}</td><td>${s.active===false?"No":"Yes"}</td>
+   <td><div class="row-actions"><button class="btn ghost" data-edit="${d.id}">Edit</button><button class="btn danger" data-delete="${d.id}">Delete</button></div></td>`;
+   $("songsBody").appendChild(tr);
+   tr.querySelector("[data-edit]").onclick=()=>startEdit(d.id,s);
+   tr.querySelector("[data-delete]").onclick=()=>removeSong(d.id,s.title);
+  });
+ }catch(err){$("songsBody").innerHTML='<tr><td colspan="6">Could not load songs. Check Firestore rules.</td></tr>';$("count").textContent=err.message;}
+}
+
+$("songForm").addEventListener("submit",async e=>{
+ e.preventDefault(); if(!auth.currentUser)return;
+ const data={title:$("title").value.trim(),artist:$("artist").value.trim(),mood:$("mood").value,
+ country:$("country").value.trim().toUpperCase(),style:$("style").value,spotify:$("spotify").value.trim(),
+ youtube:$("youtube").value.trim(),active:$("active").value==="true",updatedAt:serverTimestamp()};
+ $("saveMsg").textContent="Saving...";
+ try{
+  const id=$("songId").value;
+  if(id) await updateDoc(doc(db,"songs",id),data);
+  else await addDoc(collection(db,"songs"),{...data,createdAt:serverTimestamp()});
+  $("saveMsg").textContent="Saved ✓";resetForm();await loadSongs();
+ }catch(err){$("saveMsg").textContent="Save failed: "+err.message;}
+});
+
+function startEdit(id,s){
+ $("songId").value=id;$("title").value=s.title||"";$("artist").value=s.artist||"";$("mood").value=s.mood||"";
+ $("country").value=s.country||"";$("style").value=s.style||"";$("spotify").value=s.spotify||"";$("youtube").value=s.youtube||"";
+ $("active").value=s.active===false?"false":"true";$("formTitle").textContent="Edit song";$("cancelEdit").style.display="inline-block";
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+$("cancelEdit").onclick=resetForm;
+async function removeSong(id,title){if(!confirm('Delete "'+title+'"?'))return;try{await deleteDoc(doc(db,"songs",id));await loadSongs();}catch(err){alert("Delete failed: "+err.message);}}
+function resetForm(){$("songForm").reset();$("songId").value="";$("formTitle").textContent="Add song";$("cancelEdit").style.display="none";$("saveMsg").textContent="";}
+function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+</script>
+</body>
+</html>

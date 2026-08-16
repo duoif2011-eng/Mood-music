@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mood Music — Songs that match how you feel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0d;
+  --bg-2:#111115;
+  --card:#15151a;
+  --card-2:#1b1b21;
+  --line:rgba(255,255,255,0.08);
+  --ink:#f4f3f0;
+  --ink-dim:rgba(244,243,240,0.62);
+  --ink-faint:rgba(244,243,240,0.38);
+  --accent:#ff8a3d;
+  --accent-2:#ffc53d;
+  --accent-rgb:255,138,61;
+  --radius:22px;
+  --ease:cubic-bezier(.22,1,.36,1);
+  color-scheme: dark;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Manrope',sans-serif;
+  min-height:100svh;
+  overflow-x:hidden;
+  transition:background 900ms var(--ease);
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(var(--accent-rgb),0.35);}
+h1,h2,h3{font-family:'Fraunces',serif; margin:0; letter-spacing:-0.01em;}
+p{margin:0;}
+button{font-family:inherit;}
+a{color:inherit;}
+
+/* ambient glow layer */
+.glow-field{
+  position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+}
+.glow-field::before,
+.glow-field::after{
+  content:'';
+  position:absolute;
+  width:70vmax; height:70vmax;
+  border-radius:50%;
+  filter:blur(90px);
+  opacity:0.28;
+  transition:background 900ms var(--ease), opacity 900ms var(--ease);
+  will-change:transform;
+}
+.glow-field::before{
+  top:-25vmax; left:-20vmax;
+  background:radial-gradient(circle at 30% 30%, var(--accent), transparent 70%);
+  animation:driftA 22s ease-in-out infinite;
+}
+.glow-field::after{
+  bottom:-30vmax; right:-20vmax;
+  background:radial-gradient(circle at 60% 60%, var(--accent-2), transparent 70%);
+  animation:driftB 26s ease-in-out infinite;
+}
+@keyframes driftA{
+  0%,100%{transform:translate(0,0) scale(1);}
+  50%{transform:translate(6vw,8vh) scale(1.12);}
+}
+@keyframes driftB{
+  0%,100%{transform:translate(0,0) scale(1);}
+  50%{transform:translate(-5vw,-6vh) scale(1.08);}
+}
+
+.app{position:relative; z-index:1; min-height:100svh; display:flex; flex-direction:column;}
+
+/* top bar */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:22px clamp(18px,5vw,48px) 0;
+}
+.brand{
+  display:flex; align-items:center; gap:10px;
+  font-family:'Fraunces',serif; font-weight:600; font-size:18px; letter-spacing:-0.01em;
+}
+.brand-orb{
+  width:20px;height:20px;border-radius:50%;
+  background:linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow:0 0 18px rgba(var(--accent-rgb),0.7);
+  transition:background 700ms var(--ease), box-shadow 700ms var(--ease);
+}
+.steps{
+  display:flex; gap:8px;
+}
+.step-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--line);
+  transition:all 500ms var(--ease);
+}
+.step-dot.active{ background:var(--accent); width:22px; border-radius:5px; box-shadow:0 0 10px rgba(var(--accent-rgb),0.6);}
+.step-dot.done{ background:var(--ink-faint); }
+
+/* main stage */
+.stage{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px clamp(18px,5vw,48px) 60px;
+  position:relative;
+}
+.panel{
+  width:100%;
+  max-width:880px;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  animation:panelIn 620ms var(--ease);
+}
+.panel.active{display:flex;}
+@keyframes panelIn{
+  from{opacity:0; transform:translateY(18px) scale(.985);}
+  to{opacity:1; transform:translateY(0) scale(1);}
+}
+
+/* the mood orb — signature element */
+.orb-wrap{
+  width:min(46vw,220px); height:min(46vw,220px);
+  margin:6px auto 28px;
+  position:relative;
+  display:flex; align-items:center; justify-content:center;
+}
+.orb{
+  width:78%; height:78%;
+  background:linear-gradient(135deg, var(--accent), var(--accent-2));
+  filter:blur(0.3px);
+  transition:background 700ms var(--ease), border-radius 900ms var(--ease);
+  box-shadow:0 30px 80px -20px rgba(var(--accent-rgb),0.55), 0 0 0 1px rgba(255,255,255,0.06) inset;
+  border-radius:42% 58% 65% 35% / 45% 45% 55% 55%;
+  animation:morph 9s ease-in-out infinite, breathe 4.5s ease-in-out infinite;
+}
+@keyframes morph{
+  0%{border-radius:42% 58% 65% 35% / 45% 45% 55% 55%;}
+  33%{border-radius:65% 35% 40% 60% / 60% 40% 60% 40%;}
+  66%{border-radius:35% 65% 55% 45% / 40% 60% 40% 60%;}
+  100%{border-radius:42% 58% 65% 35% / 45% 45% 55% 55%;}
+}
+@keyframes breathe{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.06);}
+}
+.orb-emoji{
+  position:absolute; font-size:min(11vw,52px);
+  filter:drop-shadow(0 6px 18px rgba(0,0,0,0.35));
+  animation:bob 3.6s ease-in-out infinite;
+}
+@keyframes bob{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-6px);}
+}
+/* mood-state motion modifiers */
+body[data-mood="stressed"] .orb{animation:morph 2.2s ease-in-out infinite, jitter 0.42s ease-in-out infinite;}
+@keyframes jitter{
+  0%,100%{transform:translate(0,0);}
+  25%{transform:translate(1.5px,-1px);}
+  50%{transform:translate(-1.5px,1px);}
+  75%{transform:translate(1px,1.5px);}
+}
+body[data-mood="energetic"] .orb{animation:morph 3.5s ease-in-out infinite, breathe 1.1s ease-in-out infinite;}
+body[data-mood="tired"] .orb, body[data-mood="bored"] .orb{animation:morph 14s ease-in-out infinite, breathe 6.5s ease-in-out infinite;}
+body[data-mood="chill"] .orb{animation:morph 11s ease-in-out infinite, breathe 5.5s ease-in-out infinite;}
+
+.eyebrow{
+  font-size:12px; text-transform:uppercase; letter-spacing:0.16em;
+  color:var(--ink-faint); font-weight:700; margin-bottom:10px;
+}
+h1.q{
+  font-size:clamp(28px,5.2vw,46px);
+  font-weight:600;
+  line-height:1.08;
+  margin-bottom:10px;
+}
+.sub{
+  color:var(--ink-dim);
+  font-size:clamp(14px,2vw,16px);
+  max-width:520px;
+  margin-bottom:36px;
+}
+
+/* mood grid */
+.mood-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  width:100%;
+  max-width:640px;
+}
+@media(max-width:520px){ .mood-grid{grid-template-columns:repeat(3,1fr);} }
+.mood-card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:18px 8px 14px;
+  cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  transition:transform 320ms var(--ease), border-color 320ms var(--ease), background 320ms var(--ease);
+  -webkit-tap-highlight-color:transparent;
+}
+.mood-card:hover{transform:translateY(-4px);}
+.mood-card:active{transform:translateY(-1px) scale(.98);}
+.mood-card .m-emoji{font-size:28px; transition:transform 320ms var(--ease);}
+.mood-card:hover .m-emoji{transform:scale(1.18) rotate(-4deg);}
+.mood-card .m-label{font-size:13px; font-weight:700; color:var(--ink-dim);}
+.mood-card.selected{
+  border-color:rgba(var(--accent-rgb),0.7);
+  background:linear-gradient(160deg, rgba(var(--accent-rgb),0.16), rgba(var(--accent-rgb),0.03));
+}
+.mood-card.selected .m-label{color:var(--ink);}
+.mood-color-dot{
+  width:8px;height:8px;border-radius:50%;
+  margin-top:2px;
+}
+
+/* country grid */
+.search-row{width:100%; max-width:560px; margin-bottom:18px;}
+.search-row input{
+  width:100%;
+  background:var(--card);
+  border:1px solid var(--line);
+  color:var(--ink);
+  padding:13px 16px;
+  border-radius:14px;
+  font-size:15px;
+  outline:none;
+  transition:border-color 300ms var(--ease);
+}
+.search-row input:focus{border-color:rgba(var(--accent-rgb),0.6);}
+.search-row input::placeholder{color:var(--ink-faint);}
+
+.country-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(128px,1fr));
+  gap:10px;
+  width:100%;
+  max-width:680px;
+  max-height:44vh;
+  overflow-y:auto;
+  padding:4px 4px 8px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--line) transparent;
+}
+.country-card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px 10px;
+  cursor:pointer;
+  display:flex; align-items:center; gap:8px;
+  font-size:13.5px; font-weight:600; color:var(--ink-dim);
+  transition:all 260ms var(--ease);
+  text-align:left;
+}
+.country-card:hover{border-color:rgba(var(--accent-rgb),0.45); transform:translateY(-2px);}
+.country-card .flag{font-size:18px;}
+.country-card.selected{
+  border-color:rgba(var(--accent-rgb),0.8);
+  background:linear-gradient(160deg, rgba(var(--accent-rgb),0.18), rgba(var(--accent-rgb),0.03));
+  color:var(--ink);
+}
+
+/* music preference chips */
+.pref-grid{
+  display:grid; grid-template-columns:repeat(2,1fr); gap:12px;
+  width:100%; max-width:480px;
+}
+@media(max-width:480px){ .pref-grid{grid-template-columns:1fr 1fr;} }
+.pref-card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:20px 12px;
+  cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  transition:all 280ms var(--ease);
+}
+.pref-card .p-emoji{font-size:26px;}
+.pref-card .p-label{font-size:14px; font-weight:700;}
+.pref-card.selected{
+  border-color:rgba(var(--accent-rgb),0.75);
+  background:linear-gradient(160deg, rgba(var(--accent-rgb),0.18), rgba(var(--accent-rgb),0.03));
+}
+.pref-card.locked{
+  cursor:default;
+  position:relative;
+}
+.pref-card.locked::after{
+  content:'always on';
+  position:absolute; top:8px; right:10px;
+  font-size:9.5px; font-weight:800; letter-spacing:0.04em;
+  color:var(--ink-faint);
+  text-transform:uppercase;
+}
+.pref-note{
+  margin-top:16px; font-size:12.5px; color:var(--ink-faint);
+}
+
+/* nav buttons */
+.nav-row{
+  display:flex; align-items:center; gap:14px;
+  margin-top:38px;
+}
+.btn{
+  border:none; cursor:pointer;
+  border-radius:100px;
+  font-weight:700;
+  font-size:14.5px;
+  padding:14px 28px;
+  transition:transform 220ms var(--ease), box-shadow 220ms var(--ease), opacity 220ms var(--ease);
+  display:inline-flex; align-items:center; gap:8px;
+}
+.btn:active{transform:scale(.96);}
+.btn-primary{
+  background:linear-gradient(135deg, var(--accent), var(--accent-2));
+  color:#0a0a0d;
+  box-shadow:0 14px 34px -12px rgba(var(--accent-rgb),0.55);
+}
+.btn-primary:hover{transform:translateY(-2px);}
+.btn-primary:disabled{opacity:0.35; cursor:not-allowed; transform:none; box-shadow:none;}
+.btn-ghost{
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--ink-dim);
+}
+.btn-ghost:hover{border-color:rgba(255,255,255,0.22); color:var(--ink);}
+
+/* ============ RESULTS ============ */
+.results-wrap{width:100%; max-width:1080px; margin:0 auto;}
+.results-head{
+  display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+  flex-wrap:wrap;
+  margin-bottom:28px;
+  text-align:left;
+}
+.results-head .r-emoji{font-size:34px; margin-right:8px;}
+.results-title{
+  font-size:clamp(30px,5vw,44px); font-weight:600; line-height:1.02;
+}
+.results-meta{
+  color:var(--ink-dim); font-size:14px; margin-top:8px;
+}
+.results-meta b{color:var(--ink); font-weight:700;}
+.results-actions{display:flex; gap:10px; flex-wrap:wrap;}
+
+.card-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:18px;
+  width:100%;
+}
+.song-card{
+  background:linear-gradient(180deg, var(--card-2), var(--card));
+  border:1px solid var(--line);
+  border-radius:20px;
+  overflow:hidden;
+  text-align:left;
+  display:flex; flex-direction:column;
+  transition:transform 340ms var(--ease), border-color 340ms var(--ease);
+  animation:cardIn 560ms var(--ease) both;
+}
+.song-card:hover{transform:translateY(-6px); border-color:rgba(var(--accent-rgb),0.4);}
+@keyframes cardIn{
+  from{opacity:0; transform:translateY(16px);}
+  to{opacity:1; transform:translateY(0);}
+}
+.art{
+  width:100%; aspect-ratio:1/1;
+  position:relative;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+}
+.art svg{width:100%; height:100%; display:block;}
+.art-badge{
+  position:absolute; top:10px; left:10px;
+  background:rgba(10,10,13,0.55);
+  backdrop-filter:blur(6px);
+  border:1px solid rgba(255,255,255,0.14);
+  color:#fff; font-size:11px; font-weight:700;
+  padding:5px 10px; border-radius:100px;
+  letter-spacing:0.02em;
+}
+.song-body{
+  padding:16px 16px 18px;
+  display:flex; flex-direction:column; gap:10px; flex:1;
+}
+.song-title{font-family:'Fraunces',serif; font-size:18px; font-weight:600; line-height:1.2;}
+.song-artist{font-size:13.5px; color:var(--ink-dim); font-weight:600;}
+.song-tags{display:flex; gap:6px; flex-wrap:wrap; margin-top:2px;}
+.tag{
+  font-size:11px; font-weight:700; color:var(--ink-faint);
+  border:1px solid var(--line); padding:4px 9px; border-radius:100px;
+}
+.listen-row{
+  margin-top:auto; padding-top:10px;
+  display:flex; gap:8px;
+}
+.listen-btn{
+  flex:1;
+  text-decoration:none;
+  text-align:center;
+  font-size:12.5px; font-weight:700;
+  padding:10px 8px;
+  border-radius:100px;
+  border:1px solid var(--line);
+  color:var(--ink-dim);
+  transition:all 240ms var(--ease);
+}
+.listen-btn:hover{
+  border-color:rgba(var(--accent-rgb),0.7);
+  color:var(--ink);
+  background:rgba(var(--accent-rgb),0.1);
+}
+
+.results-count{
+  text-align:left; color:var(--ink-faint); font-size:12.5px; font-weight:700;
+  margin-bottom:14px; letter-spacing:0.02em;
+}
+.load-more-bar{
+  margin:28px 0 4px;
+  display:flex; justify-content:center;
+}
+.load-more-btn{
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--ink-dim);
+  padding:14px 30px;
+  border-radius:100px;
+  font-weight:800;
+  font-size:14px;
+  cursor:pointer;
+  transition:all 240ms var(--ease);
+}
+.load-more-btn:hover{
+  border-color:rgba(var(--accent-rgb),0.7);
+  color:var(--ink);
+  background:rgba(var(--accent-rgb),0.1);
+  transform:translateY(-2px);
+}
+.load-more-btn:disabled{opacity:0.35; cursor:not-allowed; transform:none;}
+.load-more-btn.hidden{display:none;}
+
+.surprise-bar{
+  margin:20px 0 8px;
+  display:flex; justify-content:center;
+}
+.surprise-btn{
+  background:var(--card-2);
+  border:1px solid var(--line);
+  color:var(--ink);
+  padding:16px 30px;
+  border-radius:100px;
+  font-weight:800;
+  font-size:15px;
+  cursor:pointer;
+  display:flex; align-items:center; gap:10px;
+  box-shadow:0 20px 50px -20px rgba(var(--accent-rgb),0.4);
+  transition:all 260ms var(--ease);
+}
+.surprise-btn:hover{transform:translateY(-2px) rotate(-0.4deg); border-color:rgba(var(--accent-rgb),0.7);}
+.surprise-btn .dice{font-size:18px; display:inline-block;}
+.surprise-btn.spin .dice{animation:spin 550ms ease;}
+@keyframes spin{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+
+.spotlight{
+  margin-top:22px;
+  display:none;
+}
+.spotlight.show{display:block; animation:panelIn 500ms var(--ease);}
+
+.footer-note{
+  text-align:center; color:var(--ink-faint); font-size:12px;
+  margin-top:44px; line-height:1.7; max-width:560px; margin-left:auto; margin-right:auto;
+}
+
+.restart-link{
+  display:inline-flex; align-items:center; gap:6px;
+  margin-top:6px;
+  color:var(--ink-dim); font-size:13px; font-weight:700;
+  cursor:pointer; text-decoration:none;
+  border-bottom:1px solid transparent;
+}
+.restart-link:hover{color:var(--ink); border-color:var(--ink-dim);}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+}
+
+@media (max-width:640px){
+  .stage{padding-bottom:40px;}
+  .country-grid{max-height:50vh;}
+}
+</style>
+</head>
+<body data-mood="happy">
+
+<div class="glow-field"></div>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><span class="brand-orb"></span>Mood Music</div>
+    <div class="steps" id="stepDots">
+      <span class="step-dot" data-step="0"></span>
+      <span class="step-dot" data-step="1"></span>
+      <span class="step-dot" data-step="2"></span>
+      <span class="step-dot" data-step="3"></span>
+    </div>
+  </div>
+
+  <div class="stage">
+
+    <!-- STEP 0 — MOOD -->
+    <section class="panel" id="panel-mood">
+      <div class="orb-wrap"><div class="orb"></div><div class="orb-emoji" id="orbEmoji">😄</div></div>
+      <div class="eyebrow">Step 1 of 3</div>
+      <h1 class="q">How are you feeling today?</h1>
+      <p class="sub">Pick a mood — the whole page will shift to match it. Colors below are everyday associations inspired by color psychology, not scientific fact.</p>
+      <div class="mood-grid" id="moodGrid"></div>
+      <div class="nav-row">
+        <button class="btn btn-primary" id="toCountry" disabled>Continue →</button>
+      </div>
+    </section>
+
+    <!-- STEP 1 — COUNTRY -->
+    <section class="panel" id="panel-country">
+      <div class="eyebrow">Step 2 of 3</div>
+      <h1 class="q">Where are you from? 🌍</h1>
+      <p class="sub">We'll use this to find local music that fits your mood, alongside global picks.</p>
+      <div class="search-row"><input type="text" id="countrySearch" placeholder="Search countries…"></div>
+      <div class="country-grid" id="countryGrid"></div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" id="backToMood">← Back</button>
+        <button class="btn btn-primary" id="toPref" disabled>Continue →</button>
+      </div>
+    </section>
+
+    <!-- STEP 2 — MUSIC PREFERENCE -->
+    <section class="panel" id="panel-pref">
+      <div class="eyebrow">Step 3 of 3</div>
+      <h1 class="q">What kind of music do you want? 🎵</h1>
+      <p class="sub">English is always included as a global pick. Add as many other styles as you like.</p>
+      <div class="pref-grid" id="prefGrid"></div>
+      <p class="pref-note">🇺🇸 English is included automatically for every country</p>
+      <div class="nav-row">
+        <button class="btn btn-ghost" id="backToCountry">← Back</button>
+        <button class="btn btn-primary" id="toResults">Show My Picks →</button>
+      </div>
+    </section>
+
+    <!-- STEP 3 — RESULTS -->
+    <section class="panel" id="panel-results">
+      <div class="results-wrap">
+        <div class="results-head">
+          <div>
+            <div class="results-title" id="resultsTitle"><span class="r-emoji">🔥</span>Your Mood Picks</div>
+            <div class="results-meta" id="resultsMeta"></div>
+            <a class="restart-link" id="changeMood">↺ Change My Mood</a>
+          </div>
+          <div class="results-actions">
+            <button class="btn btn-ghost" id="editSelections">Edit selections</button>
+          </div>
+        </div>
+
+        <div class="results-count" id="resultsCount"></div>
+        <div class="card-grid" id="cardGrid"></div>
+
+        <div class="load-more-bar">
+          <button class="load-more-btn" id="loadMoreBtn">Load More 🎵</button>
+        </div>
+
+        <div class="surprise-bar">
+          <button class="surprise-btn" id="surpriseBtn"><span class="dice">🎲</span> Surprise Me</button>
+        </div>
+
+        <div class="spotlight" id="spotlight"></div>
+
+        <p class="footer-note">Mood Music suggests where to listen — it links out to platforms like Spotify and YouTube Music rather than hosting any audio. Recommendations are generated from your mood, country and style choices, not at random.</p>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA
+   ============================================================ */
+const MOODS = [
+  {id:'happy',     emoji:'😄', label:'Happy',     word:'joyful',    accent:'#ffc53d', accent2:'#ff8a3d', rgb:'255,184,61'},
+  {id:'bored',     emoji:'😴', label:'Bored',     word:'restless',  accent:'#9aa4b2', accent2:'#5c6773', rgb:'154,164,178'},
+  {id:'sad',       emoji:'😔', label:'Sad',       word:'tender',    accent:'#6f8cf0', accent2:'#3a4e9c', rgb:'111,140,240'},
+  {id:'chill',     emoji:'😎', label:'Chill',     word:'easy',      accent:'#37d0c4', accent2:'#1b8f9e', rgb:'55,208,196'},
+  {id:'stressed',  emoji:'🤯', label:'Stressed',  word:'tense',     accent:'#ff5f6d', accent2:'#8b1e3f', rgb:'255,95,109'},
+  {id:'energetic', emoji:'🔥', label:'Energetic', word:'electric',  accent:'#ff5b2e', accent2:'#ffb300', rgb:'255,91,46'},
+  {id:'tired',     emoji:'🥱', label:'Tired',     word:'low-key',   accent:'#9b7fe8', accent2:'#4b3a82', rgb:'155,127,232'},
+];
+
+const COUNTRIES = [
+  {c:'EG',n:'Egypt',f:'🇪🇬'},{c:'SA',n:'Saudi Arabia',f:'🇸🇦'},{c:'AE',n:'United Arab Emirates',f:'🇦🇪'},
+  {c:'KW',n:'Kuwait',f:'🇰🇼'},{c:'JO',n:'Jordan',f:'🇯🇴'},{c:'LB',n:'Lebanon',f:'🇱🇧'},
+  {c:'MA',n:'Morocco',f:'🇲🇦'},{c:'DZ',n:'Algeria',f:'🇩🇿'},{c:'TN',n:'Tunisia',f:'🇹🇳'},
+  {c:'IQ',n:'Iraq',f:'🇮🇶'},{c:'SY',n:'Syria',f:'🇸🇾'},{c:'PS',n:'Palestine',f:'🇵🇸'},
+  {c:'QA',n:'Qatar',f:'🇶🇦'},{c:'BH',n:'Bahrain',f:'🇧🇭'},{c:'OM',n:'Oman',f:'🇴🇲'},
+  {c:'YE',n:'Yemen',f:'🇾🇪'},{c:'LY',n:'Libya',f:'🇱🇾'},{c:'SD',n:'Sudan',f:'🇸🇩'},
+  {c:'US',n:'United States',f:'🇺🇸'},{c:'GB',n:'United Kingdom',f:'🇬🇧'},{c:'CA',n:'Canada',f:'🇨🇦'},
+  {c:'FR',n:'France',f:'🇫🇷'},{c:'DE',n:'Germany',f:'🇩🇪'},{c:'ES',n:'Spain',f:'🇪🇸'},
+  {c:'IT',n:'Italy',f:'🇮🇹'},{c:'TR',n:'Turkey',f:'🇹🇷'},
+  {c:'JP',n:'Japan',f:'🇯🇵'},{c:'KR',n:'South Korea',f:'🇰🇷'},{c:'CN',n:'China',f:'🇨🇳'},
+  {c:'IN',n:'India',f:'🇮🇳'},{c:'PH',n:'Philippines',f:'🇵🇭'},{c:'ID',n:'Indonesia',f:'🇮🇩'},
+  {c:'NG',n:'Nigeria',f:'🇳🇬'},{c:'ZA',n:'South Africa',f:'🇿🇦'},{c:'KE',n:'Kenya',f:'🇰🇪'},
+  {c:'GH',n:'Ghana',f:'🇬🇭'},{c:'ET',n:'Ethiopia',f:'🇪🇹'},
+  {c:'BR',n:'Brazil',f:'🇧🇷'},{c:'MX',n:'Mexico',f:'🇲🇽'},{c:'AU',n:'Australia',f:'🇦🇺'},
+];
+
+const PREFS = [
+  {id:'arabic',  emoji:'🕌', label:'Arabic'},
+  {id:'english', emoji:'🇺🇸', label:'English'},
+  {id:'asian',   emoji:'🌏', label:'Asian'},
+  {id:'african', emoji:'🌍', label:'African'},
+];
+
+// ---- ENGLISH (universal, 40+ real songs per mood) ----
+const ENGLISH = {
+  happy: [
+    {t:'Good as Hell',a:'Lizzo'},{t:'Walking on Sunshine',a:'Katrina & The Waves'},{t:'Happy',a:'Pharrell Williams'},
+    {t:"Can't Stop the Feeling!",a:'Justin Timberlake'},{t:'September',a:'Earth, Wind & Fire'},{t:'Uptown Funk',a:'Mark Ronson ft. Bruno Mars'},
+    {t:"Don't Start Now",a:'Dua Lipa'},{t:'Celebration',a:'Kool & The Gang'},{t:'24K Magic',a:'Bruno Mars'},{t:'Get Lucky',a:'Daft Punk'},
+    {t:'I Wanna Dance with Somebody',a:'Whitney Houston'},{t:'Dancing Queen',a:'ABBA'},{t:'Signed, Sealed, Delivered',a:'Stevie Wonder'},
+    {t:'I Want You Back',a:'The Jackson 5'},{t:'Hey Ya!',a:'OutKast'},{t:'Firework',a:'Katy Perry'},{t:"Don't Stop Believin'",a:'Journey'},
+    {t:"Don't Stop Me Now",a:'Queen'},{t:'Brown Eyed Girl',a:'Van Morrison'},{t:'Girls Just Want to Have Fun',a:'Cyndi Lauper'},
+    {t:'Good Vibrations',a:'The Beach Boys'},{t:'Shut Up and Dance',a:'Walk the Moon'},{t:'All About That Bass',a:'Meghan Trainor'},
+    {t:'Brave',a:'Sara Bareilles'},{t:"Honey, I'm Good",a:'Andy Grammer'},{t:"I'm Yours",a:'Jason Mraz'},{t:'Hey, Soul Sister',a:'Train'},
+    {t:'Good Life',a:'OneRepublic'},{t:'Some Nights',a:'Fun.'},{t:'Call Me Maybe',a:'Carly Rae Jepsen'},{t:'High Hopes',a:'Panic! At The Disco'},
+    {t:'Sunday Morning',a:'Maroon 5'},{t:'Lovely Day',a:'Bill Withers'},{t:'Dancing in the Moonlight',a:'King Harvest'},
+    {t:'We Are Family',a:'Sister Sledge'},{t:"I'm Coming Out",a:'Diana Ross'},{t:'About Damn Time',a:'Lizzo'},
+    {t:'Watermelon Sugar',a:'Harry Styles'},{t:'Sucker',a:'Jonas Brothers'},{t:'Ho Hey',a:'The Lumineers'},{t:'Fight Song',a:'Rachel Platten'},
+    {t:'Roar',a:'Katy Perry'},{t:'Fireflies',a:'Owl City'},{t:'Kids',a:'MGMT'},{t:"I'm a Believer",a:'The Monkees'},
+    {t:'Best Day of My Life',a:'American Authors'},{t:'Wake Me Up Before You Go-Go',a:'Wham!'},{t:"Ain't No Mountain High Enough",a:'Marvin Gaye & Tammi Terrell'},
+    {t:'Dog Days Are Over',a:'Florence + The Machine'},{t:'Three Little Birds',a:'Bob Marley & The Wailers'}
+  ],
+  bored: [
+    {t:'Ordinary World',a:'Duran Duran'},{t:'Vacation',a:'Dirty Heads'},{t:'A-Punk',a:'Vampire Weekend'},{t:'What You Know',a:'Two Door Cinema Club'},
+    {t:'Kids',a:'MGMT'},{t:'Pumped Up Kicks',a:'Foster The People'},{t:'1901',a:'Phoenix'},{t:'Take Me Out',a:'Franz Ferdinand'},
+    {t:'Last Nite',a:'The Strokes'},{t:'Do I Wanna Know?',a:'Arctic Monkeys'},{t:'Seven Nation Army',a:'The White Stripes'},
+    {t:'Buddy Holly',a:'Weezer'},{t:'Song 2',a:'Blur'},{t:'Feel Good Inc.',a:'Gorillaz'},{t:'Loser',a:'Beck'},
+    {t:'Short Skirt/Long Jacket',a:'Cake'},{t:'Once in a Lifetime',a:'Talking Heads'},{t:'Whip It',a:'Devo'},
+    {t:'Just What I Needed',a:'The Cars'},{t:'Rock Lobster',a:"The B-52's"},{t:'Island in the Sun',a:'Weezer'},
+    {t:'HandClap',a:'Fitz and the Tantrums'},{t:'Bang!',a:'AJR'},{t:'Stressed Out',a:'Twenty One Pilots'},{t:'Radioactive',a:'Imagine Dragons'},
+    {t:'Feel It Still',a:'Portugal. The Man'},{t:'Heat Waves',a:'Glass Animals'},{t:"Ain't No Rest for the Wicked",a:'Cage the Elephant'},
+    {t:'Mr. Brightside',a:'The Killers'},{t:'Fire',a:'Kasabian'},{t:"Are You Gonna Be My Girl",a:'Jet'},{t:'Do You Want To',a:'Franz Ferdinand'},
+    {t:'The Way We Get By',a:'Spoon'},{t:'If You Wanna',a:'The Vaccines'},{t:'Banquet',a:'Bloc Party'},{t:"Help I'm Alive",a:'Metric'},
+    {t:'The Mother We Share',a:'CHVRCHES'},{t:'Sleepyhead',a:'Passion Pit'},{t:'Tongue Tied',a:'Grouplove'},
+    {t:'Walking on a Dream',a:'Empire of the Sun'},{t:'My Number',a:'Foals'},{t:'Breezeblocks',a:'alt-J'},{t:'Elephant',a:'Tame Impala'},
+    {t:'Stolen Dance',a:'Milky Chance'},{t:'Electric Avenue',a:'Eddy Grant'},{t:'Are You Gonna Go My Way',a:'Lenny Kravitz'},
+    {t:'Everlong',a:'Foo Fighters'},{t:'Basket Case',a:'Green Day'},{t:'Longview',a:'Green Day'},{t:'1979',a:'The Smashing Pumpkins'}
+  ],
+  sad: [
+    {t:'Someone Like You',a:'Adele'},{t:'Fix You',a:'Coldplay'},{t:'The Scientist',a:'Coldplay'},{t:'Stay With Me',a:'Sam Smith'},
+    {t:'Breathe Me',a:'Sia'},{t:'Hello',a:'Adele'},{t:'Fake Plastic Trees',a:'Radiohead'},{t:'Creep',a:'Radiohead'},
+    {t:'Everybody Hurts',a:'R.E.M.'},{t:'Hurt',a:'Johnny Cash'},{t:'Hallelujah',a:'Jeff Buckley'},{t:'Skinny Love',a:'Bon Iver'},
+    {t:'Holocene',a:'Bon Iver'},{t:"The Blower's Daughter",a:'Damien Rice'},{t:'Between the Bars',a:'Elliott Smith'},
+    {t:'Pictures of You',a:'The Cure'},{t:'Back to Black',a:'Amy Winehouse'},{t:'Someone You Loved',a:'Lewis Capaldi'},
+    {t:'Goodbye My Lover',a:'James Blunt'},{t:'Somebody That I Used to Know',a:'Gotye'},{t:'Let Her Go',a:'Passenger'},
+    {t:'Too Good at Goodbyes',a:'Sam Smith'},{t:"when the party's over",a:'Billie Eilish'},{t:'everything i wanted',a:'Billie Eilish'},
+    {t:'Video Games',a:'Lana Del Rey'},{t:'Summertime Sadness',a:'Lana Del Rey'},{t:'Motion Sickness',a:'Phoebe Bridgers'},
+    {t:'Self Control',a:'Frank Ocean'},{t:'Thinkin Bout You',a:'Frank Ocean'},{t:'Wicked Games',a:'The Weeknd'},
+    {t:'When We Were Young',a:'Adele'},{t:"I'd Rather Go Blind",a:'Etta James'},{t:'(Sittin\' On) The Dock of the Bay',a:'Otis Redding'},
+    {t:'The Sound of Silence',a:'Simon & Garfunkel'},{t:'Bridge Over Troubled Water',a:'Simon & Garfunkel'},{t:'Landslide',a:'Fleetwood Mac'},
+    {t:'First Day of My Life',a:'Bright Eyes'},{t:'The National - I Need My Girl',a:'The National'},{t:'Soul Meets Body',a:'Death Cab for Cutie'},
+    {t:'I Will Follow You into the Dark',a:'Death Cab for Cutie'},{t:'Somewhere Only We Know',a:'Keane'},{t:'Chasing Cars',a:'Snow Patrol'},
+    {t:'Nothing Compares 2 U',a:"Sinéad O'Connor"},{t:'Tears in Heaven',a:'Eric Clapton'},{t:'Mad World',a:'Gary Jules'},
+    {t:'How to Save a Life',a:'The Fray'},{t:'Photograph',a:'Ed Sheeran'},{t:'Say Something',a:'A Great Big World'},
+    {t:'I Will Always Love You',a:'Whitney Houston'},{t:'The Night We Met',a:'Lord Huron'}
+  ],
+  chill: [
+    {t:'Sunflower',a:'Post Malone & Swae Lee'},{t:'Electric Feel',a:'MGMT'},{t:'Better Together',a:'Jack Johnson'},
+    {t:'Banana Pancakes',a:'Jack Johnson'},{t:'Come Away With Me',a:'Norah Jones'},{t:'Gravity',a:'John Mayer'},
+    {t:'Slow Dancing in a Burning Room',a:'John Mayer'},{t:'Location',a:'Khalid'},{t:'Best Friend',a:'Rex Orange County'},
+    {t:'Bad Habit',a:'Steve Lacy'},{t:'The Less I Know the Better',a:'Tame Impala'},{t:'Chamber of Reflection',a:'Mac DeMarco'},
+    {t:'Show Me How',a:'Men I Trust'},{t:'Space Song',a:'Beach House'},{t:'Girl Like You',a:'Toro y Moi'},{t:'Back Pocket',a:'Vulfpeck'},
+    {t:'Situationship',a:'Snoh Aalegra'},{t:'Best Part',a:'H.E.R. ft. Daniel Caesar'},{t:'Get You',a:'Daniel Caesar'},
+    {t:'Telepatía',a:'Kali Uchis'},{t:'Good Days',a:'SZA'},{t:'Ivy',a:'Frank Ocean'},{t:'Put Your Records On',a:'Corinne Bailey Rae'},
+    {t:'Virtual Insanity',a:'Jamiroquai'},{t:'Smooth Operator',a:'Sade'},{t:"Let's Stay Together",a:'Al Green'},
+    {t:"Ain't No Sunshine",a:'Bill Withers'},{t:'Untitled (How Does It Feel)',a:"D'Angelo"},{t:'On & On',a:'Erykah Badu'},
+    {t:'Come Down',a:'Anderson .Paak'},{t:'Jealous (I Ain\'t With It)',a:'Chromeo'},{t:'Feel It All Around',a:'Washed Out'},
+    {t:'Apocalypse',a:'Cigarettes After Sex'},{t:'Loving Is Easy',a:'Rex Orange County'},{t:'Goodie Bag',a:'Still Woozy'},
+    {t:'Everytime',a:'Boy Pablo'},{t:'Pretty Girl',a:'Clairo'},{t:'girls',a:'girl in red'},{t:'Falling Behind',a:'Laufey'},
+    {t:"Don't Know Why",a:'Norah Jones'},{t:'In the Waiting Line',a:'Zero 7'},{t:'Lebanese Blonde',a:'Thievery Corporation'},
+    {t:'Cirrus',a:'Bonobo'},{t:'Maria También',a:'Khruangbin'},{t:'Redbone',a:'Childish Gambino'},{t:'Feels Like Summer',a:'Childish Gambino'},
+    {t:'Adore You',a:'Harry Styles'},{t:'Cherry Wine',a:'Hozier'},{t:'Africa',a:'Toto'},{t:'The Night We Met',a:'Lord Huron'}
+  ],
+  stressed: [
+    {t:'Weightless',a:'Marconi Union'},{t:'Only Time',a:'Enya'},{t:'Orinoco Flow',a:'Enya'},{t:'Come Away With Me',a:'Norah Jones'},
+    {t:'Hoppípolla',a:'Sigur Rós'},{t:'On the Nature of Daylight',a:'Max Richter'},{t:'Nuvole Bianche',a:'Ludovico Einaudi'},
+    {t:'River Flows in You',a:'Yiruma'},{t:'An Ending (Ascent)',a:'Brian Eno'},{t:'Clair de Lune',a:'Claude Debussy'},
+    {t:'Near Light',a:'Ólafur Arnalds'},{t:'Says',a:'Nils Frahm'},{t:'Your Hand in Mine',a:'Explosions in the Sky'},
+    {t:'Kerala',a:'Bonobo'},{t:'A Walk',a:'Tycho'},{t:'Soon It Will Be Cold Enough',a:'Emancipator'},{t:'Go Do',a:'Jónsi'},
+    {t:'Riverside',a:'Agnes Obel'},{t:'Keep Your Head Up',a:'Ben Howard'},{t:'Heartbeats',a:'José González'},
+    {t:'Naked As We Came',a:'Iron & Wine'},{t:'Featherstone',a:'The Paper Kites'},{t:'Sleeping Sickness',a:'City and Colour'},
+    {t:'Cannonball',a:'Damien Rice'},{t:'Orange Sky',a:'Alexi Murdoch'},{t:'Mykonos',a:'Fleet Foxes'},{t:'Mystery of Love',a:'Sufjan Stevens'},
+    {t:'Visions of Gideon',a:'Sufjan Stevens'},{t:'Open',a:'Rhye'},{t:'The Greatest',a:'Cat Power'},{t:'1234',a:'Feist'},
+    {t:'Fidelity',a:'Regina Spektor'},{t:'Emmylou',a:'First Aid Kit'},{t:'Perfect Darkness',a:'Fink'},{t:'Destiny',a:'Zero 7'},
+    {t:'Roygbiv',a:'Boards of Canada'},{t:'Avril 14th',a:'Aphex Twin'},{t:'Butterfly Waltz',a:'Brian Crain'},
+    {t:'Song from a Secret Garden',a:'Secret Garden'},{t:'The Swan',a:'Yo-Yo Ma'},{t:'Misread',a:'Kings of Convenience'},
+    {t:'Luna',a:'Bombay Bicycle Club'},{t:'Everglow',a:'Coldplay'},{t:'Let It Go',a:'James Bay'},{t:'The Night We Met',a:'Lord Huron'},
+    {t:'Spiegel im Spiegel',a:'Arvo Pärt'},{t:'Gymnopédie No. 1',a:'Erik Satie'},{t:'Experience',a:'Ludovico Einaudi'},
+    {t:'Divenire',a:'Ludovico Einaudi'},{t:'Watermark',a:'Enya'}
+  ],
+  energetic: [
+    {t:'Blinding Lights',a:'The Weeknd'},{t:'Levitating',a:'Dua Lipa'},{t:'One More Time',a:'Daft Punk'},{t:'Titanium',a:'David Guetta ft. Sia'},
+    {t:'Feel So Close',a:'Calvin Harris'},{t:'This Is What You Came For',a:'Calvin Harris & Rihanna'},{t:'Levels',a:'Avicii'},
+    {t:"Don't You Worry Child",a:'Swedish House Mafia'},{t:'Closer',a:'The Chainsmokers ft. Halsey'},{t:'Stronger',a:'Kanye West'},
+    {t:'Till I Collapse',a:'Eminem'},{t:'Lose Yourself',a:'Eminem'},{t:'Eye of the Tiger',a:'Survivor'},{t:'Thunderstruck',a:'AC/DC'},
+    {t:"Don't Stop Me Now",a:'Queen'},{t:'Welcome to the Jungle',a:"Guns N' Roses"},{t:'The Pretender',a:'Foo Fighters'},
+    {t:'Killing in the Name',a:'Rage Against the Machine'},{t:'Firestarter',a:'The Prodigy'},{t:'Right Here, Right Now',a:'Fatboy Slim'},
+    {t:'Party Rock Anthem',a:'LMFAO'},{t:"I Gotta Feeling",a:'Black Eyed Peas'},{t:'Low',a:'Flo Rida ft. T-Pain'},
+    {t:'Give Me Everything',a:'Pitbull'},{t:'Yeah!',a:'Usher'},{t:'Crazy in Love',a:'Beyoncé'},{t:'Don\'t Stop the Music',a:'Rihanna'},
+    {t:'Toxic',a:'Britney Spears'},{t:'TiK ToK',a:'Kesha'},{t:'This Is Love',a:'will.i.am ft. Eva Simons'},
+    {t:"Let's Dance",a:'David Bowie'},{t:'Maniac',a:'Michael Sembello'},{t:'Jungle Boogie',a:'Kool & The Gang'},
+    {t:'I Got You (I Feel Good)',a:'James Brown'},{t:'I Wanna Dance with Somebody',a:'Whitney Houston'},{t:'I Love It',a:'Icona Pop'},
+    {t:'Cheap Thrills',a:'Sia'},{t:'Runaway (U & I)',a:'Galantis'},{t:'Clarity',a:'Zedd ft. Foxes'},{t:'Animals',a:'Martin Garrix'},
+    {t:'Alone',a:'Marshmello'},{t:'Believer',a:'Imagine Dragons'},{t:'Ride',a:'Twenty One Pilots'},{t:'Victorious',a:'Panic! At The Disco'},
+    {t:"Can't Hold Us",a:'Macklemore & Ryan Lewis'},{t:"Livin' on a Prayer",a:'Bon Jovi'},{t:'Sweet Dreams (Are Made of This)',a:'Eurythmics'},
+    {t:'We Will Rock You',a:'Queen'},{t:'Turn Down for What',a:'DJ Snake & Lil Jon'},{t:'HUMBLE.',a:'Kendrick Lamar'}
+  ],
+  tired: [
+    {t:'Holocene',a:'Bon Iver'},{t:'Only Time',a:'Enya'},{t:'Heartbeats',a:'José González'},{t:'Boy with a Coin',a:'Iron & Wine'},
+    {t:'re: stacks',a:'Bon Iver'},{t:'Woodland',a:'The Paper Kites'},{t:'Anchor',a:'Novo Amor'},{t:'Amsterdam',a:'Gregory Alan Isakov'},
+    {t:'Blue Ridge Mountains',a:'Fleet Foxes'},{t:'Silver Timothy',a:'Damien Jurado'},{t:'Futile Devices',a:'Sufjan Stevens'},
+    {t:'Say Yes',a:'Elliott Smith'},{t:'Pink Moon',a:'Nick Drake'},{t:'River Man',a:'Nick Drake'},{t:'The Wind',a:'Cat Stevens'},
+    {t:'Fire and Rain',a:'James Taylor'},{t:'The Boxer',a:'Simon & Garfunkel'},{t:'Turn Me On',a:'Norah Jones'},
+    {t:'ocean eyes',a:'Billie Eilish'},{t:'Liability',a:'Lorde'},{t:'Funeral',a:'Phoebe Bridgers'},{t:'Lua',a:'Bright Eyes'},
+    {t:'Kettering',a:'The Antlers'},{t:'Carry Me Ohio',a:'Sun Kil Moon'},{t:'Big Jet Plane',a:'Angus & Julia Stone'},
+    {t:'Rivers and Roads',a:'The Head and the Heart'},{t:'Welcome Home',a:'Radical Face'},{t:'Only Love',a:'Ben Howard'},
+    {t:'The Girl',a:'City and Colour'},{t:'Youth',a:'Daughter'},{t:'Ends of the Earth',a:'Lord Huron'},{t:'Stay Gold',a:'First Aid Kit'},
+    {t:'Bloom',a:'The Paper Kites'},{t:'Doria',a:'Ólafur Arnalds'},{t:'The Fall',a:'Rhye'},{t:'Full Circle',a:'Half Moon Run'},
+    {t:'Airplanes',a:'Local Natives'},{t:'Riptide',a:'Vance Joy'},{t:'Mess Is Mine',a:'Vance Joy'},{t:'Flashed Junk Mind',a:'Milky Chance'},
+    {t:'Work Song',a:'Hozier'},{t:'Hold Back the River',a:'James Bay'},{t:'Sitting, Waiting, Wishing',a:'Jack Johnson'},
+    {t:'Like a Star',a:'Corinne Bailey Rae'},{t:'Trouble',a:'Ray LaMontagne'},{t:'Skinny Love',a:'Bon Iver'},
+    {t:'To Build a Home',a:'The Cinematic Orchestra'},{t:'Iris',a:'Goo Goo Dolls'},{t:'Slow Burn',a:'Kacey Musgraves'},
+    {t:'The Night We Met',a:'Lord Huron'}
+  ]
+};
+
+// ---- ARABIC: flat pool per mood, each song tagged with country of origin (c) ----
+const ARABIC = {
+  happy: [
+    {t:'Tamally Maak',a:'Amr Diab',c:'EG'},{t:'Nour El Ain',a:'Amr Diab',c:'EG'},{t:'Ana Wenta',a:'Tamer Hosny',c:'EG'},
+    {t:'Ah W Noss',a:'Nancy Ajram',c:'LB'},{t:'Ya Tabtab',a:'Nancy Ajram',c:'LB'},{t:'Ajmal Ihsas',a:'Elissa',c:'LB'},
+    {t:'Aman Aman',a:'Myriam Fares',c:'LB'},{t:'Lm3allem',a:'Saad Lamjarred',c:'MA'},{t:'Mal Hbibi Malou',a:'Saad Lamjarred',c:'MA'},
+    {t:'Aicha',a:'Cheb Khaled',c:'DZ'},{t:'Didi',a:'Cheb Khaled',c:'DZ'},{t:'Boushret Kheir',a:'Hussain Al Jassmi',c:'AE'},
+    {t:'Ya Halla',a:'Rashed Al Majed',c:'SA'},{t:'Wana Kel Youm',a:'Mohammed Abdu',c:'SA'},{t:'Farhana',a:'Diana Karazon',c:'JO'},
+    {t:'Alf Leila W Leila',a:'Kadim Al Sahir',c:'IQ'},{t:'Kammel Kalamak',a:'Wael Kfoury',c:'LB'},{t:'Sallem Alay',a:'Ragheb Alama',c:'LB'},
+    {t:'Number One',a:'Mohamed Ramadan',c:'EG'},{t:'Wala Fi Al Khayal',a:'Sherine',c:'EG'},{t:'Ana Msh Bansa',a:'Cairokee',c:'EG'},
+    {t:'Ya Lili',a:'Balti ft. Hamouda',c:'TN'},{t:'Rani Rani',a:'Zina Daoudia',c:'MA'},{t:'Wallahi Maloush Da3wa',a:'Angham',c:'EG'}
+  ],
+  bored: [
+    {t:'Baba',a:'Mohamed Ramadan',c:'EG'},{t:'Mal Hbibi Malou',a:'Saad Lamjarred',c:'MA'},{t:'Bledi',a:'Balti',c:'TN'},
+    {t:'Ana Msh Bansa',a:'Cairokee',c:'EG'},{t:'Casa',a:'ElGrandeToto',c:'MA'},{t:'Liberté',a:'Soolking',c:'DZ'},
+    {t:'Ah W Noss',a:'Nancy Ajram',c:'LB'},{t:'Ana Wenta',a:'Tamer Hosny',c:'EG'},{t:'Boushret Kheir',a:'Hussain Al Jassmi',c:'AE'},
+    {t:'Ya Halla',a:'Rashed Al Majed',c:'SA'},{t:'Aman Aman',a:'Myriam Fares',c:'LB'},{t:'Rani Rani',a:'Zina Daoudia',c:'MA'},
+    {t:'Farhana',a:'Diana Karazon',c:'JO'},{t:'Ajmal Ihsas',a:'Elissa',c:'LB'},{t:'Aicha',a:'Cheb Khaled',c:'DZ'},
+    {t:'Tamally Maak',a:'Amr Diab',c:'EG'},{t:"Bos Aa'lik",a:'Mohamed Hamaki',c:'EG'},{t:'Ma Bansak',a:'Wael Kfoury',c:'LB'},
+    {t:'Ghali',a:'Abdullah Al Rowaished',c:'KW'},{t:'Fdik Fdik',a:'ElGrandeToto',c:'MA'}
+  ],
+  sad: [
+    {t:'Zidiny Ishkan',a:'Kadim Al Sahir',c:'IQ'},{t:'Kifak Inta',a:'Fairuz',c:'LB'},{t:'Amal Hayati',a:'Umm Kulthum',c:'EG'},
+    {t:"Qari'at Al Fingan",a:'Abdel Halim Hafez',c:'EG'},{t:'Ala Bali',a:'Sherine',c:'EG'},{t:'Masdaqtish',a:'Sherine',c:'EG'},
+    {t:'Ana Aakher Haga',a:'Angham',c:'EG'},{t:'Bastanak',a:'Elissa',c:'LB'},{t:'Aayshalak',a:'Elissa',c:'LB'},
+    {t:'Bein Edeih',a:'Wael Kfoury',c:'LB'},{t:'Salemouli Alayh',a:'Najwa Karam',c:'LB'},{t:'Kalby Ma3ak',a:'Assala',c:'SY'},
+    {t:'Wala Ala Baly',a:'Amr Diab',c:'EG'},{t:'Ya Ghaly',a:'Tamer Hosny',c:'EG'},{t:'Ya Reit',a:'Diana Haddad',c:'AE'},
+    {t:'Beirut',a:'Majida El Roumi',c:'LB'},{t:'Al Leila',a:'Mohamed Mounir',c:'EG'},{t:'Batwanes Beek',a:'Warda Al-Jazairia',c:'DZ'},
+    {t:'Roubama',a:'Latifa',c:'TN'},{t:'Ghmedt Aini',a:'Saber Rebai',c:'TN'},{t:'Ana Baddi Eesh',a:'Julia Boutros',c:'LB'},
+    {t:'Betfakar Fiya',a:'Yara',c:'LB'},{t:'Ghayeb',a:'Assi El Hallani',c:'LB'},{t:'Sad El Fadi',a:'Hussain Al Jassmi',c:'AE'}
+  ],
+  chill: [
+    {t:'Aweda',a:'Mohamed Mounir',c:'EG'},{t:'Nassam Alayna El Hawa',a:'Fairuz',c:'LB'},{t:'Li Beirut',a:'Fairuz',c:'LB'},
+    {t:'Alf Leila W Leila',a:'Kadim Al Sahir',c:'IQ'},{t:'Bala Wala Sabab',a:'Yara',c:'LB'},{t:'Mesh Nadmana',a:'Assala',c:'SY'},
+    {t:'Sahran Ya Amar',a:'Amr Diab',c:'EG'},{t:'Law Kan Fi Emkany',a:'Angham',c:'EG'},{t:'Bel Ahdan',a:'Diana Haddad',c:'AE'},
+    {t:'Kif Ansak',a:'Wael Jassar',c:'LB'},{t:'Ghenwa',a:'Latifa',c:'TN'},{t:'Bhebbak',a:'Julia Boutros',c:'LB'},
+    {t:'Kalimat',a:'Majida El Roumi',c:'LB'},{t:'Ahwak',a:'Abdel Halim Hafez',c:'EG'},{t:'Alf Leila Wa Leila',a:'Umm Kulthum',c:'EG'},
+    {t:'Enta Omri',a:'Umm Kulthum',c:'EG'},{t:'Awel Hamsa',a:'Farid al-Atrash',c:'EG'},{t:'Ya Msafer Wahdak',a:'Mohamed Abdel Wahab',c:'EG'},
+    {t:'Rita',a:'Marcel Khalife',c:'LB'},{t:'Ya Nasini',a:'Saber Rebai',c:'TN'},{t:'Sabry Aalek',a:'Amal Maher',c:'EG'},
+    {t:'Aatab',a:'Ragheb Alama',c:'LB'},{t:'Mersal',a:'Assi El Hallani',c:'LB'}
+  ],
+  stressed: [
+    {t:'Habaytak Bessayf',a:'Fairuz',c:'LB'},{t:'Kifak Inta',a:'Fairuz',c:'LB'},{t:'Fakarouny',a:'Umm Kulthum',c:'EG'},
+    {t:'Enta Omri',a:'Umm Kulthum',c:'EG'},{t:'Fatet Ganbena',a:'Abdel Halim Hafez',c:'EG'},{t:'Ahwak',a:'Abdel Halim Hafez',c:'EG'},
+    {t:'Ya Msafer Wahdak',a:'Mohamed Abdel Wahab',c:'EG'},{t:'Awel Hamsa',a:'Farid al-Atrash',c:'EG'},{t:'Kalimat',a:'Majida El Roumi',c:'LB'},
+    {t:'Batwanes Beek',a:'Warda Al-Jazairia',c:'DZ'},{t:'Aweda',a:'Mohamed Mounir',c:'EG'},{t:'Alf Leila W Leila',a:'Kadim Al Sahir',c:'IQ'},
+    {t:'Mesh Nadmana',a:'Assala',c:'SY'},{t:'Law Kan Fi Emkany',a:'Angham',c:'EG'},{t:'Bala Wala Sabab',a:'Yara',c:'LB'},
+    {t:'Bhebbak',a:'Julia Boutros',c:'LB'},{t:'Ghenwa',a:'Latifa',c:'TN'},{t:'Sabry Aalek',a:'Amal Maher',c:'EG'},
+    {t:'Bel Ahdan',a:'Diana Haddad',c:'AE'},{t:'Kif Ansak',a:'Wael Jassar',c:'LB'}
+  ],
+  energetic: [
+    {t:'Baba',a:'Mohamed Ramadan',c:'EG'},{t:'Bledi',a:'Balti',c:'TN'},{t:'Liberté',a:'Soolking',c:'DZ'},{t:'Guerilla',a:'Soolking',c:'DZ'},
+    {t:"C'est la Vie",a:'Cheb Khaled',c:'DZ'},{t:'Fdik Fdik',a:'ElGrandeToto',c:'MA'},{t:'Casa',a:'ElGrandeToto',c:'MA'},
+    {t:'Sahbi',a:'Saad Lamjarred',c:'MA'},{t:'El Leila',a:'Amr Diab',c:'EG'},{t:'Bahibbik Bahibbik',a:'Tamer Hosny',c:'EG'},
+    {t:"Bos Aa'lik",a:'Mohamed Hamaki',c:'EG'},{t:'Aa Bali Habibi',a:'Nancy Ajram',c:'LB'},{t:'Ghayreh',a:'Ahlam',c:'AE'},
+    {t:'Malek Fya',a:'Rashed Al Majed',c:'SA'},{t:'Khallik Hena',a:'Abdul Majeed Abdullah',c:'SA'},{t:'Ta3ban',a:'Waed',c:'SA'},
+    {t:'Ya Halla Beek',a:'Nabeel Shuail',c:'KW'},{t:'Ghali',a:'Abdullah Al Rowaished',c:'KW'},{t:'Bein El Nas',a:'Omar Al Abdallat',c:'JO'},
+    {t:'Wein Rayha',a:'Diana Karazon',c:'JO'},{t:'Ya Reit',a:'Hani Metwasi',c:'JO'},{t:'Meli Meli',a:'Cheb Mami',c:'DZ'},
+    {t:'Ya Rayah',a:'Rachid Taha',c:'DZ'},{t:'Abdel Kader',a:'Cheb Khaled',c:'DZ'}
+  ],
+  tired: [
+    {t:'Habaytak Bessayf',a:'Fairuz',c:'LB'},{t:'Fakarouny',a:'Umm Kulthum',c:'EG'},{t:'Fatet Ganbena',a:'Abdel Halim Hafez',c:'EG'},
+    {t:'Ya Msafer Wahdak',a:'Mohamed Abdel Wahab',c:'EG'},{t:'Awel Hamsa',a:'Farid al-Atrash',c:'EG'},{t:'Kalimat',a:'Majida El Roumi',c:'LB'},
+    {t:'Batwanes Beek',a:'Warda Al-Jazairia',c:'DZ'},{t:'Aweda',a:'Mohamed Mounir',c:'EG'},{t:'Alf Leila W Leila',a:'Kadim Al Sahir',c:'IQ'},
+    {t:'Mesh Nadmana',a:'Assala',c:'SY'},{t:'Law Kan Fi Emkany',a:'Angham',c:'EG'},{t:'Bala Wala Sabab',a:'Yara',c:'LB'},
+    {t:'Bhebbak',a:'Julia Boutros',c:'LB'},{t:'Ghenwa',a:'Latifa',c:'TN'},{t:'Sabry Aalek',a:'Amal Maher',c:'EG'},
+    {t:'Bel Ahdan',a:'Diana Haddad',c:'AE'},{t:'Kif Ansak',a:'Wael Jassar',c:'LB'},{t:'Aatab',a:'Ragheb Alama',c:'LB'},
+    {t:'Mersal',a:'Assi El Hallani',c:'LB'},{t:'Ala Bali',a:'Sherine',c:'EG'}
+  ]
+};
+
+// ---- ASIAN: flat pool per mood, tagged with country of origin (c) ----
+const ASIAN = {
+  happy: [
+    {t:'Dynamite',a:'BTS',c:'KR'},{t:'Cheer Up',a:'TWICE',c:'KR'},{t:'I AM',a:'IVE',c:'KR'},{t:'Super Shy',a:'NewJeans',c:'KR'},
+    {t:'Red Flavor',a:'Red Velvet',c:'KR'},{t:'DDU-DU DDU-DU',a:'BLACKPINK',c:'KR'},{t:'Pretender',a:'Official HIGE DANDism',c:'JP'},
+    {t:'Lemon',a:'Kenshi Yonezu',c:'JP'},{t:'Idol',a:'YOASOBI',c:'JP'},{t:'Polyrhythm',a:'Perfume',c:'JP'},
+    {t:'Qing Hua Ci',a:'Jay Chou',c:'CN'},{t:'Xin Qiang',a:'G.E.M.',c:'CN'},{t:'Serba Salah',a:'Raisa',c:'ID'},
+    {t:'Sepatu',a:'Tulus',c:'ID'},{t:'Zinda',a:'Siddharth Mahadevan',c:'IN'},{t:'Paani Paani',a:'Badshah',c:'IN'},
+    {t:'Dilbar',a:'Neha Kakkar',c:'IN'},{t:'Titibo-tibo',a:'Moira Dela Torre',c:'PH'},{t:'Kathang Isip',a:'Ben&Ben',c:'PH'},
+    {t:"God's Menu",a:'Stray Kids',c:'KR'},{t:'Tomboy',a:'(G)I-DLE',c:'KR'},{t:'Usseewa',a:'Ado',c:'JP'},
+    {t:'Shan Hai',a:'JJ Lin',c:'CN'},{t:'Cao Mei Zhi',a:'Li Ronghao',c:'CN'},{t:'Gento',a:'SB19',c:'PH'}
+  ],
+  bored: [
+    {t:'Dynamite',a:'BTS',c:'KR'},{t:'Cheer Up',a:'TWICE',c:'KR'},{t:'Super Shy',a:'NewJeans',c:'KR'},{t:'I AM',a:'IVE',c:'KR'},
+    {t:"God's Menu",a:'Stray Kids',c:'KR'},{t:'Kids',a:'Rich Brian',c:'ID'},{t:'Any Song',a:'Zico',c:'KR'},
+    {t:'Qing Hua Ci',a:'Jay Chou',c:'CN'},{t:'Xin Qiang',a:'G.E.M.',c:'CN'},{t:'Paani Paani',a:'Badshah',c:'IN'},
+    {t:'Dilbar',a:'Neha Kakkar',c:'IN'},{t:'Gento',a:'SB19',c:'PH'},{t:'Kathang Isip',a:'Ben&Ben',c:'PH'},
+    {t:'Serba Salah',a:'Raisa',c:'ID'},{t:'Usseewa',a:'Ado',c:'JP'},{t:'Polyrhythm',a:'Perfume',c:'JP'},
+    {t:'Wherever You Are',a:'ONE OK ROCK',c:'JP'},{t:'Tomboy',a:'(G)I-DLE',c:'KR'},{t:'Wannabe',a:'ITZY',c:'KR'},
+    {t:'Wonderland',a:'ATEEZ',c:'KR'}
+  ],
+  sad: [
+    {t:'Channa Mereya',a:'Arijit Singh',c:'IN'},{t:'Ae Dil Hai Mushkil',a:'Arijit Singh',c:'IN'},{t:'Teri Meri',a:'Shreya Ghoshal',c:'IN'},
+    {t:'Tere Mast Mast Do Nain',a:'Rahat Fateh Ali Khan',c:'IN'},{t:'Lemon',a:'Kenshi Yonezu',c:'JP'},{t:'First Love',a:'Utada Hikaru',c:'JP'},
+    {t:'Marigold',a:'Aimyon',c:'JP'},{t:'Qing Hua Ci',a:'Jay Chou',c:'CN'},{t:'Yu Jian',a:'Faye Wong',c:'CN'},{t:'Hong Dou',a:'Faye Wong',c:'CN'},
+    {t:'Xin Qiang',a:'G.E.M.',c:'CN'},{t:'Cai Hong',a:'JJ Lin',c:'CN'},{t:'Ruang Sendiri',a:'Tulus',c:'ID'},
+    {t:'Paubaya',a:'Moira Dela Torre',c:'PH'},{t:'Titibo-tibo',a:'Moira Dela Torre',c:'PH'},{t:'Pagtingin',a:'Ben&Ben',c:'PH'}
+  ],
+  chill: [
+    {t:'La Luna',a:'NIKI',c:'ID'},{t:'Lowkey',a:'NIKI',c:'ID'},{t:'Cold',a:'Rich Brian',c:'ID'},{t:'Blueming',a:'IU',c:'KR'},
+    {t:'Through the Night',a:'IU',c:'KR'},{t:'Beautiful',a:'Crush',c:'KR'},{t:'21',a:'Dean',c:'KR'},{t:'Any Song',a:'Zico',c:'KR'},
+    {t:'First Love',a:'Utada Hikaru',c:'JP'},{t:'Wherever You Are',a:'ONE OK ROCK',c:'JP'},{t:'Kaikai Kitan',a:'Eve',c:'JP'},
+    {t:'Cold/Mess',a:'Prateek Kuhad',c:'IN'},{t:'Tum Jab Paas',a:'Prateek Kuhad',c:'IN'},{t:'Tum Hi Ho',a:'Arijit Singh',c:'IN'},
+    {t:'Teri Ore',a:'Shreya Ghoshal',c:'IN'},{t:'Kun Faya Kun',a:'A.R. Rahman',c:'IN'},{t:'Ruang Sendiri',a:'Tulus',c:'ID'},
+    {t:'Kali Kedua',a:'Raisa',c:'ID'},{t:'Malaya',a:'Moira Dela Torre',c:'PH'},{t:'Leaves',a:'Ben&Ben',c:'PH'}
+  ],
+  stressed: [
+    {t:'River Flows in You',a:'Yiruma',c:'KR'},{t:'Kiss the Rain',a:'Yiruma',c:'KR'},{t:"One Summer's Day",a:'Joe Hisaishi',c:'JP'},
+    {t:'Merry-Go-Round of Life',a:'Joe Hisaishi',c:'JP'},{t:'Merry Christmas Mr. Lawrence',a:'Ryuichi Sakamoto',c:'JP'},
+    {t:'Tere Bina',a:'A.R. Rahman',c:'IN'},{t:'First Love',a:'Utada Hikaru',c:'JP'},{t:'Through the Night',a:'IU',c:'KR'},
+    {t:'Cold/Mess',a:'Prateek Kuhad',c:'IN'},{t:'Ruang Sendiri',a:'Tulus',c:'ID'},{t:'Lowkey',a:'NIKI',c:'ID'},
+    {t:'Beautiful',a:'Crush',c:'KR'},{t:'Yu Jian',a:'Faye Wong',c:'CN'},{t:'Qing Hua Ci',a:'Jay Chou',c:'CN'},
+    {t:'Paubaya',a:'Moira Dela Torre',c:'PH'}
+  ],
+  energetic: [
+    {t:'Pink Venom',a:'BLACKPINK',c:'KR'},{t:'Kill This Love',a:'BLACKPINK',c:'KR'},{t:'Fire',a:'BTS',c:'KR'},{t:'MIC Drop',a:'BTS',c:'KR'},
+    {t:"God's Menu",a:'Stray Kids',c:'KR'},{t:'Wonderland',a:'ATEEZ',c:'KR'},{t:'Tomboy',a:'(G)I-DLE',c:'KR'},{t:'Wannabe',a:'ITZY',c:'KR'},
+    {t:'ETA',a:'NewJeans',c:'KR'},{t:'Gimme Chocolate!!',a:'Babymetal',c:'JP'},{t:'Usseewa',a:'Ado',c:'JP'},{t:'KICK BACK',a:'Kenshi Yonezu',c:'JP'},
+    {t:'Polyrhythm',a:'Perfume',c:'JP'},{t:'DJ Waley Babu',a:'Badshah',c:'IN'},{t:'Blue Eyes',a:'Yo Yo Honey Singh',c:'IN'},
+    {t:'Lover',a:'Diljit Dosanjh',c:'IN'},{t:'Cold',a:'Rich Brian',c:'ID'},{t:'Kids',a:'Rich Brian',c:'ID'},{t:'Any Song',a:'Zico',c:'KR'}
+  ],
+  tired: [
+    {t:'Blueming',a:'IU',c:'KR'},{t:'River Flows in You',a:'Yiruma',c:'KR'},{t:'First Love',a:'Utada Hikaru',c:'JP'},
+    {t:'Lowkey',a:'NIKI',c:'ID'},{t:'Ruang Sendiri',a:'Tulus',c:'ID'},{t:'Cold/Mess',a:'Prateek Kuhad',c:'IN'},
+    {t:'Titibo-tibo',a:'Moira Dela Torre',c:'PH'},{t:'Beautiful',a:'Crush',c:'KR'},{t:'Hong Dou',a:'Faye Wong',c:'CN'},
+    {t:'Cai Hong',a:'JJ Lin',c:'CN'},{t:'Marigold',a:'Aimyon',c:'JP'},{t:"One Summer's Day",a:'Joe Hisaishi',c:'JP'},
+    {t:'Kun Faya Kun',a:'A.R. Rahman',c:'IN'},{t:'Teri Meri',a:'Shreya Ghoshal',c:'IN'},{t:'Leaves',a:'Ben&Ben',c:'PH'},
+    {t:'Cold',a:'Rich Brian',c:'ID'},{t:'21',a:'Dean',c:'KR'},{t:'Any Song',a:'Zico',c:'KR'}
+  ]
+};
+
+// ---- AFRICAN: flat pool per mood, tagged with country of origin (c) ----
+const AFRICAN = {
+  happy: [
+    {t:'Last Last',a:'Burna Boy',c:'NG'},{t:'Essence',a:'Wizkid',c:'NG'},{t:'Fall',a:'Davido',c:'NG'},{t:'Rush',a:'Ayra Starr',c:'NG'},
+    {t:'Calm Down',a:'Rema',c:'NG'},{t:'Peru',a:'Fireboy DML',c:'NG'},{t:'Water',a:'Tyla',c:'ZA'},{t:'Jerusalema',a:'Master KG',c:'ZA'},
+    {t:'Ke Star',a:'Focalistic',c:'ZA'},{t:'Sura Yako',a:'Sauti Sol',c:'KE'},{t:'Extravaganza',a:'Sauti Sol',c:'KE'},
+    {t:'Adonai',a:'Stonebwoy',c:'GH'},{t:'Country Side',a:'Sarkodie',c:'GH'},{t:'Already',a:'Shatta Wale',c:'GH'},
+    {t:'Waah',a:'Diamond Platnumz',c:'default'},{t:'Kokoliko',a:'Fally Ipupa',c:'default'},{t:'Agolo',a:'Angelique Kidjo',c:'default'},
+    {t:'7 Seconds',a:'Youssou N\'Dour',c:'default'},{t:'Unavailable',a:'Davido',c:'NG'},{t:'Bloody Samaritan',a:'Ayra Starr',c:'NG'},
+    {t:'Sungba',a:'Asake',c:'NG'},{t:'Dumebi',a:'Rema',c:'NG'}
+  ],
+  bored: [
+    {t:'Sungba',a:'Asake',c:'NG'},{t:'Calm Down',a:'Rema',c:'NG'},{t:'Bloody Samaritan',a:'Ayra Starr',c:'NG'},{t:'Fall',a:'Davido',c:'NG'},
+    {t:'Ke Star',a:'Focalistic',c:'ZA'},{t:'Skeleton Move',a:'Kabza De Small',c:'ZA'},{t:'Kwaku the Traveller',a:'Black Sherif',c:'GH'},
+    {t:'Already',a:'Shatta Wale',c:'GH'},{t:'Putuu',a:'Stonebwoy',c:'GH'},{t:'Extravaganza',a:'Sauti Sol',c:'KE'},
+    {t:'Sura Yako',a:'Sauti Sol',c:'KE'},{t:'Water',a:'Tyla',c:'ZA'},{t:'Kokoliko',a:'Fally Ipupa',c:'default'},
+    {t:'Salome',a:'Diamond Platnumz',c:'default'},{t:'Essence',a:'Wizkid',c:'NG'}
+  ],
+  sad: [
+    {t:'Love Damini',a:'Burna Boy',c:'NG'},{t:'Lonely at the Top',a:'Davido',c:'NG'},{t:'Jericho',a:'Simi',c:'NG'},{t:'Sade',a:'Adekunle Gold',c:'NG'},
+    {t:'Bad Hair Day',a:'Nasty C',c:'ZA'},{t:'Kwaheri',a:'Otile Brown',c:'KE'},{t:'Alivyompenda',a:'Nyashinski',c:'KE'},
+    {t:'Nishike',a:'Nadia Mukami',c:'KE'},{t:'Yope',a:'Fally Ipupa',c:'default'},{t:'Malaika',a:'Angelique Kidjo',c:'default'}
+  ],
+  chill: [
+    {t:'Free Mind',a:'Tems',c:'NG'},{t:'Ojuelegba',a:'Wizkid',c:'NG'},{t:'Different',a:'Burna Boy',c:'NG'},{t:'Superman',a:'Black Coffee',c:'ZA'},
+    {t:'We Dance Again',a:'Black Coffee',c:'ZA'},{t:'Vula Mlomo',a:'Musa Keys',c:'ZA'},{t:'Weekend',a:'Nasty C',c:'ZA'},
+    {t:'Fresh',a:'Bien',c:'KE'},{t:'Kwaheri',a:'Otile Brown',c:'KE'},{t:'Malaika',a:'Nyashinski',c:'KE'},
+    {t:'Sad Girlz Luv Money',a:'Amaarae',c:'GH'},{t:'Non Living Thing',a:'Amaarae',c:'GH'},{t:'Mon Bebe',a:'Fally Ipupa',c:'default'},
+    {t:'Njoo',a:'Diamond Platnumz',c:'default'},{t:'Malaika',a:'Angelique Kidjo',c:'default'}
+  ],
+  stressed: [
+    {t:'Free Mind',a:'Tems',c:'NG'},{t:'Superman',a:'Black Coffee',c:'ZA'},{t:'Malaika',a:'Angelique Kidjo',c:'default'},
+    {t:'7 Seconds',a:'Youssou N\'Dour',c:'default'},{t:'Mon Bebe',a:'Fally Ipupa',c:'default'},{t:'Insecure',a:'Sauti Sol',c:'KE'},
+    {t:'Fresh',a:'Bien',c:'KE'},{t:'Sad Girlz Luv Money',a:'Amaarae',c:'GH'}
+  ],
+  energetic: [
+    {t:'Last Last',a:'Burna Boy',c:'NG'},{t:'Calm Down',a:'Rema',c:'NG'},{t:'Sungba',a:'Asake',c:'NG'},{t:'Bloody Samaritan',a:'Ayra Starr',c:'NG'},
+    {t:'Ke Star',a:'Focalistic',c:'ZA'},{t:'Baby Girl',a:'Kabza De Small',c:'ZA'},{t:'Skeleton Move',a:'Kabza De Small',c:'ZA'},
+    {t:'Jerusalema',a:'Master KG',c:'ZA'},{t:'Second Sermon',a:'Black Sherif',c:'GH'},{t:'Kwaku the Traveller',a:'Black Sherif',c:'GH'},
+    {t:'Country Side',a:'Sarkodie',c:'GH'},{t:'Already',a:'Shatta Wale',c:'GH'},{t:'Putuu',a:'Stonebwoy',c:'GH'},
+    {t:'Salome',a:'Diamond Platnumz',c:'default'},{t:'Kokoliko',a:'Fally Ipupa',c:'default'}
+  ],
+  tired: [
+    {t:'Free Mind',a:'Tems',c:'NG'},{t:'Superman',a:'Black Coffee',c:'ZA'},{t:'Malaika',a:'Angelique Kidjo',c:'default'},
+    {t:'Mon Bebe',a:'Fally Ipupa',c:'default'},{t:'Kwaheri',a:'Otile Brown',c:'KE'},{t:'Fresh',a:'Bien',c:'KE'},
+    {t:'Non Living Thing',a:'Amaarae',c:'GH'},{t:'Malaika',a:'Nyashinski',c:'KE'},{t:'Njoo',a:'Diamond Platnumz',c:'default'}
+  ]
+};
+
+const ARAB_SET = new Set(['EG','SA','AE','KW','JO','LB','MA','DZ','TN','IQ','SY','PS','QA','BH','OM','YE','LY','SD']);
+const ASIAN_SET = new Set(['JP','KR','CN','IN','PH','ID']);
+const AFRICAN_SET = new Set(['NG','ZA','KE','GH','ET']);
+const COUNTRY_NAME = {}; COUNTRIES.forEach(c=> COUNTRY_NAME[c.c]=c.n);
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = { mood:null, country:null, prefs:new Set(['english']) };
+
+/* ============================================================
+   RENDER: album art (generated, no external images / no copyrighted art)
+   ============================================================ */
+function artSVG(seedStr, moodObj){
+  let h=0; for(let i=0;i<seedStr.length;i++){ h = (h*31 + seedStr.charCodeAt(i)) >>> 0; }
+  const rot = h % 360;
+  const c1 = moodObj.accent, c2 = moodObj.accent2;
+  const notes = ['♪','♫','●','◆'];
+  const shapes = [];
+  for(let i=0;i<3;i++){
+    const cx = 15 + ((h>>>(i*4))%70);
+    const cy = 15 + ((h>>>(i*3+2))%70);
+    const r = 10 + ((h>>>(i*2))%18);
+    shapes.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="rgba(255,255,255,${0.05+ (i*0.03)})"/>`);
+  }
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+    <defs><linearGradient id="g${h}" x1="0" y1="0" x2="1" y2="1" gradientTransform="rotate(${rot} .5 .5)">
+      <stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/>
+    </linearGradient></defs>
+    <rect width="100" height="100" fill="url(#g${h})"/>
+    ${shapes.join('')}
+    <text x="50" y="58" font-size="30" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-family="Georgia, serif">${notes[h%4]}</text>
+  </svg>`;
+}
+
+/* ============================================================
+   BUILD STATIC UI
+   ============================================================ */
+const moodGrid = document.getElementById('moodGrid');
+MOODS.forEach(m=>{
+  const el = document.createElement('div');
+  el.className='mood-card';
+  el.dataset.mood = m.id;
+  el.innerHTML = `<span class="m-emoji">${m.emoji}</span><span class="m-label">${m.label}</span><span class="mood-color-dot" style="background:${m.accent}"></span>`;
+  el.addEventListener('click', ()=> selectMood(m.id));
+  moodGrid.appendChild(el);
+});
+
+const countryGrid = document.getElementById('countryGrid');
+function renderCountries(filter){
+  countryGrid.innerHTML='';
+  const f = (filter||'').trim().toLowerCase();
+  COUNTRIES.filter(c=>!f || c.n.toLowerCase().includes(f)).forEach(c=>{
+    const el = document.createElement('div');
+    el.className='country-card' + (state.country===c.c ? ' selected':'');
+    el.innerHTML = `<span class="flag">${c.f}</span><span>${c.n}</span>`;
+    el.addEventListener('click', ()=> selectCountry(c.c));
+    countryGrid.appendChild(el);
+  });
+}
+renderCountries('');
+document.getElementById('countrySearch').addEventListener('input', e=> renderCountries(e.target.value));
+
+const prefGrid = document.getElementById('prefGrid');
+PREFS.forEach(p=>{
+  const el = document.createElement('div');
+  el.className='pref-card' + (p.id==='english' ? ' locked selected':'');
+  el.dataset.pref = p.id;
+  el.innerHTML = `<span class="p-emoji">${p.emoji}</span><span class="p-label">${p.label}</span>`;
+  if(p.id!=='english'){ el.addEventListener('click', ()=> togglePref(p.id, el)); }
+  prefGrid.appendChild(el);
+});
+
+/* ============================================================
+   MOOD THEMING
+   ============================================================ */
+function applyMoodTheme(m){
+  const root = document.documentElement.style;
+  root.setProperty('--accent', m.accent);
+  root.setProperty('--accent-2', m.accent2);
+  root.setProperty('--accent-rgb', m.rgb);
+  document.body.setAttribute('data-mood', m.id);
+  document.getElementById('orbEmoji').textContent = m.emoji;
+}
+
+/* ============================================================
+   SELECTION HANDLERS
+   ============================================================ */
+function selectMood(id){
+  state.mood = id;
+  document.querySelectorAll('.mood-card').forEach(el=> el.classList.toggle('selected', el.dataset.mood===id));
+  applyMoodTheme(MOODS.find(m=>m.id===id));
+  document.getElementById('toCountry').disabled=false;
+}
+function selectCountry(c){
+  state.country = c;
+  renderCountries(document.getElementById('countrySearch').value);
+  document.getElementById('toPref').disabled=false;
+}
+function togglePref(id, el){
+  if(state.prefs.has(id)){ state.prefs.delete(id); el.classList.remove('selected'); }
+  else { state.prefs.add(id); el.classList.add('selected'); }
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+const panels = ['panel-mood','panel-country','panel-pref','panel-results'];
+function goTo(stepIdx){
+  panels.forEach((id,i)=> document.getElementById(id).classList.toggle('active', i===stepIdx));
+  document.querySelectorAll('.step-dot').forEach((d,i)=>{
+    d.classList.toggle('active', i===stepIdx);
+    d.classList.toggle('done', i<stepIdx);
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.getElementById('toCountry').addEventListener('click', ()=> goTo(1));
+document.getElementById('backToMood').addEventListener('click', ()=> goTo(0));
+document.getElementById('toPref').addEventListener('click', ()=> goTo(2));
+document.getElementById('backToCountry').addEventListener('click', ()=> goTo(1));
+document.getElementById('toResults').addEventListener('click', ()=>{ renderResults(); goTo(3); });
+document.getElementById('editSelections').addEventListener('click', ()=> goTo(0));
+document.getElementById('changeMood').addEventListener('click', ()=>{
+  state.mood=null;
+  document.querySelectorAll('.mood-card').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('toCountry').disabled=true;
+  goTo(0);
+});
+goTo(0);
+
+/* ============================================================
+   RECOMMENDATION ENGINE
+   ============================================================ */
+// Turns a flat, country-tagged pool (ARABIC/ASIAN/AFRICAN) for a mood into an
+// ordered list: songs from the user's own country first, then the rest of the
+// regional library — so a large, real library is still personalized.
+function regionalPool(poolByMood, mood, countryCode, countrySet, fallbackLabel, tag){
+  const list = poolByMood[mood] || [];
+  const matched = [], rest = [];
+  list.forEach(s=>{
+    if(countrySet.has(countryCode) && s.c === countryCode) matched.push(s);
+    else rest.push(s);
+  });
+  return matched.concat(rest).map(s=> ({
+    t:s.t, a:s.a, tag,
+    region: COUNTRY_NAME[s.c] || fallbackLabel
+  }));
+}
+
+function poolFor(prefId, mood, countryCode){
+  if(prefId==='english') return ENGLISH[mood].map(s=>({...s, region:'Global', tag:'English'}));
+  if(prefId==='arabic')  return regionalPool(ARABIC,  mood, countryCode, ARAB_SET,    'Pan-Arab', 'Arabic');
+  if(prefId==='asian')   return regionalPool(ASIAN,   mood, countryCode, ASIAN_SET,   'Asia',     'Asian');
+  if(prefId==='african') return regionalPool(AFRICAN, mood, countryCode, AFRICAN_SET, 'Africa',   'African');
+  return [];
+}
+
+function buildRecommendations(){
+  const mood = state.mood, country = state.country;
+  const prefsOrdered = ['arabic','english','asian','african'].filter(p=> state.prefs.has(p));
+  let out=[];
+  prefsOrdered.forEach(p=>{
+    const pool = poolFor(p, mood, country);
+    pool.forEach(song=> out.push(song));
+  });
+  return out;
+}
+
+function listenLinks(song){
+  const q = encodeURIComponent(song.t+' '+song.a);
+  return {
+    spotify: `https://open.spotify.com/search/${q}`,
+    youtube: `https://www.youtube.com/results?search_query=${q}`,
+  };
+}
+
+/* ============================================================
+   RESULTS RENDER
+   ============================================================ */
+function songCardHTML(song, moodObj){
+  const links = listenLinks(song);
+  const seed = song.t+song.a+song.region;
+  return `<div class="song-card">
+    <div class="art">${artSVG(seed, moodObj)}<span class="art-badge">${song.tag}</span></div>
+    <div class="song-body">
+      <div class="song-title">${song.t}</div>
+      <div class="song-artist">${song.a}</div>
+      <div class="song-tags"><span class="tag">${song.tag}</span><span class="tag">${song.region}</span></div>
+      <div class="listen-row">
+        <a class="listen-btn" href="${links.spotify}" target="_blank" rel="noopener">Spotify ↗</a>
+        <a class="listen-btn" href="${links.youtube}" target="_blank" rel="noopener">YouTube ↗</a>
+      </div>
+    </div>
+  </div>`;
+}
+
+const RESULTS_BATCH = 20;
+let currentPool = [];
+let displayedCount = 0;
+let currentMoodObj = null;
+
+function updateLoadMoreUI(){
+  const btn = document.getElementById('loadMoreBtn');
+  const countEl = document.getElementById('resultsCount');
+  const remaining = currentPool.length - displayedCount;
+  countEl.textContent = `Showing ${displayedCount} of ${currentPool.length} songs`;
+  if(remaining <= 0){
+    btn.classList.add('hidden');
+  } else {
+    btn.classList.remove('hidden');
+    btn.textContent = `Load More 🎵  (${Math.min(RESULTS_BATCH, remaining)} more)`;
+  }
+}
+
+function appendBatch(){
+  const grid = document.getElementById('cardGrid');
+  const next = currentPool.slice(displayedCount, displayedCount + RESULTS_BATCH);
+  grid.insertAdjacentHTML('beforeend', next.map(s=> songCardHTML(s, currentMoodObj)).join(''));
+  displayedCount += next.length;
+  updateLoadMoreUI();
+}
+
+function renderResults(){
+  const moodObj = MOODS.find(m=>m.id===state.mood);
+  currentMoodObj = moodObj;
+  const countryObj = COUNTRIES.find(c=>c.c===state.country);
+
+  document.getElementById('resultsTitle').innerHTML = `<span class="r-emoji">${moodObj.emoji}</span>Your Mood Picks`;
+  const prefLabels = [...state.prefs].map(p=> PREFS.find(x=>x.id===p).label).join(' + ');
+  document.getElementById('resultsMeta').innerHTML =
+    `Feeling <b>${moodObj.label}</b> in <b>${countryObj?countryObj.f+' '+countryObj.n:'—'}</b> · <b>${prefLabels}</b>`;
+
+  currentPool = buildRecommendations();
+  displayedCount = 0;
+
+  const grid = document.getElementById('cardGrid');
+  grid.innerHTML = '';
+  appendBatch();
+  document.getElementById('spotlight').classList.remove('show');
+}
+
+document.getElementById('loadMoreBtn').addEventListener('click', appendBatch);
+
+document.getElementById('surpriseBtn').addEventListener('click', function(){
+  if(!currentPool.length) return;
+  this.classList.add('spin');
+  setTimeout(()=> this.classList.remove('spin'), 560);
+  const moodObj = MOODS.find(m=>m.id===state.mood);
+  const pick = currentPool[Math.floor(Math.random()*currentPool.length)];
+  const box = document.getElementById('spotlight');
+  box.classList.add('show');
+  box.innerHTML = `
+    <div class="eyebrow" style="margin-bottom:14px;">Surprise pick — matched to your mood, country & style</div>
+    <div class="card-grid" style="max-width:320px;margin:0 auto;">${songCardHTML(pick, moodObj)}</div>
+  `;
+  box.scrollIntoView({behavior:'smooth', block:'center'});
+});
+</script>
+</body>
+</html>
